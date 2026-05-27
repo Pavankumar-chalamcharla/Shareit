@@ -639,11 +639,11 @@
   // ⚙️  CONFIGURATION — Fill these in before deploying!
   // ============================================================
   const CONFIG = {
-    CLOUDINARY_CLOUD_NAME:   "pavankumarchalamcharla050605",       // e.g. "mycloud123"
-    CLOUDINARY_UPLOAD_PRESET: "ml_default",   // e.g. "dropzone_unsigned"
-    JSONBIN_BIN_ID:           "6a16b9ddf47d5c455c3c5777",          // e.g. "6650a1234abcd"
-    JSONBIN_API_KEY:          "$2a$10$y.C/hQLwsvhf.FwEheSv0eNE74qVkq6KpUkjYnM2yrjM3tNm/4vuq",          // e.g. "$2a$10$..."
-    ADMIN_PASSWORD:           "pranava",  // e.g. "mysecret42"
+    CLOUDINARY_CLOUD_NAME:   "YOUR_CLOUD_NAME",       // e.g. "mycloud123"
+    CLOUDINARY_UPLOAD_PRESET: "YOUR_UPLOAD_PRESET",   // e.g. "dropzone_unsigned"
+    JSONBIN_BIN_ID:           "YOUR_BIN_ID",          // e.g. "6650a1234abcd"
+    JSONBIN_API_KEY:          "YOUR_API_KEY",          // e.g. "$2a$10$..."
+    ADMIN_PASSWORD:           "YOUR_SECRET_PASSWORD",  // e.g. "mysecret42"
   };
   // ============================================================
 
@@ -767,131 +767,4 @@
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/auto/upload`);
-
-      xhr.upload.onprogress = e => {
-        if (e.lengthComputable) {
-          const pct = Math.round(e.loaded / e.total * 100);
-          pf.style.width = pct + "%";
-          pl.textContent = `Uploading ${file.name}... ${pct}%`;
-        }
-      };
-
-      xhr.onload = async () => {
-        if (xhr.status === 200) {
-          const data = JSON.parse(xhr.responseText);
-          const entry = {
-            id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-            name: file.name,
-            size: file.size,
-            url: data.secure_url,
-            publicId: data.public_id,
-            ts: Date.now()
-          };
-          fileRegistry.push(entry);
-          await saveRegistry();
-          renderFiles();
-          sm.textContent = `✓ ${file.name} uploaded successfully!`;
-          sm.className = "status-msg success";
-          pw.style.display = "none";
-          resolve();
-        } else {
-          reject(new Error("Upload failed"));
-        }
-      };
-
-      xhr.onerror = () => reject(new Error("Network error"));
-      xhr.send(formData);
-    });
-  }
-
-  async function handleFiles(files) {
-    if (!isConfigured()) {
-      document.getElementById("statusMsg").textContent = "⚠ Site not configured yet. See setup instructions.";
-      document.getElementById("statusMsg").className = "status-msg error";
-      return;
-    }
-    for (const file of files) {
-      try {
-        await uploadFile(file);
-      } catch(e) {
-        document.getElementById("statusMsg").textContent = `✗ Failed to upload ${file.name}`;
-        document.getElementById("statusMsg").className = "status-msg error";
-        document.getElementById("progressWrap").style.display = "none";
-      }
-    }
-  }
-
-  // ---- Delete ----
-  async function deleteFile(id, publicId) {
-    if (!confirm("Delete this file permanently?")) return;
-    // Remove from registry
-    fileRegistry = fileRegistry.filter(f => f.id !== id);
-    await saveRegistry();
-    renderFiles();
-    // Note: Cloudinary deletion requires backend (server-side signature).
-    // The file is removed from the listing. For full deletion from Cloudinary,
-    // you'd need a backend function (e.g. Netlify/Vercel serverless function).
-  }
-
-  // ---- Drag & Drop ----
-  const dz = document.getElementById("dropZone");
-  dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
-  dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
-  dz.addEventListener("drop", e => {
-    e.preventDefault();
-    dz.classList.remove("dragover");
-    handleFiles([...e.dataTransfer.files]);
-  });
-
-  document.getElementById("fileInput").addEventListener("change", e => {
-    handleFiles([...e.target.files]);
-    e.target.value = "";
-  });
-
-  // ---- Admin ----
-  function toggleAdminModal() {
-    if (isAdmin) { adminLogout(); return; }
-    document.getElementById("adminModal").classList.add("open");
-    document.getElementById("adminPasswordInput").focus();
-  }
-
-  function closeAdminModal() {
-    document.getElementById("adminModal").classList.remove("open");
-    document.getElementById("adminPasswordInput").value = "";
-    document.getElementById("adminStatus").textContent = "";
-  }
-
-  function checkAdmin() {
-    const val = document.getElementById("adminPasswordInput").value;
-    if (val === CONFIG.ADMIN_PASSWORD) {
-      isAdmin = true;
-      closeAdminModal();
-      document.getElementById("adminPanel").classList.add("visible");
-      document.getElementById("adminToggleBtn").textContent = "🔓";
-      renderFiles();
-    } else {
-      document.getElementById("adminStatus").textContent = "✗ Incorrect password";
-      document.getElementById("adminStatus").className = "status-msg error";
-    }
-  }
-
-  function adminLogout() {
-    isAdmin = false;
-    document.getElementById("adminPanel").classList.remove("visible");
-    document.getElementById("adminToggleBtn").textContent = "🔑";
-    renderFiles();
-  }
-
-  // ---- Init ----
-  if (!isConfigured()) {
-    document.getElementById("configNotice").classList.add("show");
-    document.getElementById("filesGrid").innerHTML = `<div class="empty-state"><div class="empty-icon">⚙️</div><p>Configure the site to get started.</p></div>`;
-    document.getElementById("fileCount").textContent = "0 files";
-  } else {
-    loadRegistry();
-  }
-</script>
-
-</body>
-</html>
+      xh
