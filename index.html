@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DropZone — File Share</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #2a2a3a;
+      --accent: #00ffaa;
+      --accent2: #ff4d6d;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --card: #16161f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,170,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,170,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .logo {
+      font-size: 13px;
+      font-family: 'Space Mono', monospace;
+      color: var(--accent);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+      background: linear-gradient(135deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Upload Zone */
+    .upload-section {
+      margin-bottom: 48px;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 56px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: var(--surface);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0,255,170,0.06) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .drop-zone:hover::before,
+    .drop-zone.dragover::before {
+      opacity: 1;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--accent);
+      background: #12121f;
+    }
+
+    .drop-zone.dragover {
+      transform: scale(1.01);
+    }
+
+    .drop-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+      filter: grayscale(0.3);
+    }
+
+    .drop-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .drop-sub {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      margin-bottom: 24px;
+    }
+
+    #fileInput { display: none; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #00e599;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0,255,170,0.3);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+      padding: 8px 16px;
+      font-size: 11px;
+    }
+
+    .btn-danger:hover {
+      background: var(--accent2);
+      color: #fff;
+    }
+
+    /* Progress */
+    .progress-wrap {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .progress-label {
+      font-size: 12px;
+      font-family: 'Space Mono', monospace;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s;
+      border-radius: 4px;
+    }
+
+    /* Status message */
+    .status-msg {
+      margin-top: 12px;
+      font-size: 13px;
+      font-family: 'Space Mono', monospace;
+      text-align: center;
+      min-height: 20px;
+    }
+
+    .status-msg.success { color: var(--accent); }
+    .status-msg.error { color: var(--accent2); }
+
+    /* Files list */
+    .files-section {}
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-family: 'Space Mono', monospace;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .file-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(0,255,170,0.1);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .files-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .file-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: border-color 0.2s, transform 0.2s;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .file-card:hover {
+      border-color: rgba(0,255,170,0.3);
+      transform: translateX(4px);
+    }
+
+    .file-emoji {
+      font-size: 28px;
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border-radius: 10px;
+    }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-weight: 600;
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .file-meta {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-download {
+      background: rgba(0,255,170,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(0,255,170,0.2);
+      padding: 8px 16px;
+      font-size: 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-download:hover {
+      background: var(--accent);
+      color: #000;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+    }
+
+    /* Admin section */
+    .admin-toggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+    }
+
+    .admin-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+
+    .admin-btn:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+
+    /* Admin modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      margin: 20px;
+    }
+
+    .modal h2 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .modal p {
+      color: var(--muted);
+      font-size: 13px;
+      font-family: 'Space Mono', monospace;
+      margin-bottom: 24px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .btn-cancel:hover {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .admin-panel {
+      display: none;
+      margin-top: 16px;
+      background: rgba(255,77,109,0.05);
+      border: 1px solid rgba(255,77,109,0.2);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .admin-panel.visible { display: flex; align-items: center; gap: 10px; }
+
+    .admin-badge {
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      color: var(--accent2);
+      background: rgba(255,77,109,0.1);
+      padding: 4px 10px;
+      border-radius: 20px;
+      flex: 1;
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid rgba(255,77,109,0.3);
+      color: var(--accent2);
+      padding: 6px 12px;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover { background: rgba(255,77,109,0.1); }
+
+    /* Config notice */
+    .config-notice {
+      background: rgba(255,200,0,0.07);
+      border: 1px solid rgba(255,200,0,0.2);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: #ffc800;
+      line-height: 1.8;
+      display: none;
+    }
+
+    .config-notice.show { display: block; }
+    .config-notice strong { color: #ffe066; }
+
+    .loader {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0,255,170,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-files {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      .file-card { flex-wrap: wrap; }
+      .file-actions { width: 100%; }
+      .btn-download { flex: 1; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <span class="logo">⬡ DropZone</span>
+    <h1>Share Files,<br>No Login Needed.</h1>
+    <p class="subtitle">// upload · download · share freely</p>
+  </header>
+
+  <!-- Config notice shown when not set up -->
+  <div class="config-notice" id="configNotice">
+    <strong>⚠ Setup Required</strong><br>
+    This site needs to be configured before it works. Open <code>index.html</code> and fill in:<br>
+    1. <strong>CLOUDINARY_CLOUD_NAME</strong> — your Cloudinary cloud name<br>
+    2. <strong>CLOUDINARY_UPLOAD_PRESET</strong> — an unsigned upload preset<br>
+    3. <strong>JSONBIN_BIN_ID</strong> — your JSONBin bin ID<br>
+    4. <strong>JSONBIN_API_KEY</strong> — your JSONBin API key<br>
+    5. <strong>ADMIN_PASSWORD</strong> — your secret delete password<br>
+    <br>See the README below for step-by-step setup instructions.
+  </div>
+
+  <!-- Upload -->
+  <div class="upload-section">
+    <div class="drop-zone" id="dropZone">
+      <span class="drop-icon">📦</span>
+      <div class="drop-title">Drop your file here</div>
+      <div class="drop-sub">or click to browse · any file type · no size limit*</div>
+      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+        ↑ Choose File
+      </button>
+      <input type="file" id="fileInput" multiple />
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label" id="progressLabel">Uploading...</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+
+    <!-- Admin panel (visible when logged in) -->
+    <div class="admin-panel" id="adminPanel">
+      <span class="admin-badge">🔐 Admin Mode — delete enabled</span>
+      <button class="btn-logout" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Files -->
+  <div class="files-section">
+    <div class="section-header">
+      <span class="section-title">// Available Files</span>
+      <span class="file-count" id="fileCount">0 files</span>
+    </div>
+    <div class="files-grid" id="filesGrid">
+      <div class="loading-files"><span class="loader"></span> Loading files...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin toggle button -->
+<div class="admin-toggle">
+  <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminModal()" title="Admin Login">🔑</button>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <h2>Admin Access</h2>
+    <p>Enter your password to enable file deletion.</p>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="adminPasswordInput" placeholder="••••••••" onkeydown="if(event.key==='Enter') checkAdmin()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeAdminModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="checkAdmin()">Unlock</button>
+    </div>
+    <div class="status-msg" id="adminStatus" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // ⚙️  CONFIGURATION — Fill these in before deploying!
+  // ============================================================
+  const CONFIG = {
+    CLOUDINARY_CLOUD_NAME:   "YOUR_CLOUD_NAME",       // e.g. "mycloud123"
+    CLOUDINARY_UPLOAD_PRESET: "YOUR_UPLOAD_PRESET",   // e.g. "dropzone_unsigned"
+    JSONBIN_BIN_ID:           "YOUR_BIN_ID",          // e.g. "6650a1234abcd"
+    JSONBIN_API_KEY:          "YOUR_API_KEY",          // e.g. "$2a$10$..."
+    ADMIN_PASSWORD:           "YOUR_SECRET_PASSWORD",  // e.g. "mysecret42"
+  };
+  // ============================================================
+
+  // ---- State ----
+  let isAdmin = false;
+  let fileRegistry = [];
+
+  // ---- Check config ----
+  function isConfigured() {
+    return CONFIG.CLOUDINARY_CLOUD_NAME !== "YOUR_CLOUD_NAME" &&
+           CONFIG.JSONBIN_BIN_ID !== "YOUR_BIN_ID" &&
+           CONFIG.JSONBIN_API_KEY !== "YOUR_API_KEY";
+  }
+
+  // ---- JSONBin helpers ----
+  const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${CONFIG.JSONBIN_BIN_ID}`;
+  const JSONBIN_HEADERS = {
+    "Content-Type": "application/json",
+    "X-Master-Key": CONFIG.JSONBIN_API_KEY
+  };
+
+  async function loadRegistry() {
+    try {
+      const res = await fetch(JSONBIN_URL + "/latest", { headers: JSONBIN_HEADERS });
+      if (!res.ok) throw new Error("Failed to load");
+      const data = await res.json();
+      fileRegistry = data.record.files || [];
+    } catch(e) {
+      fileRegistry = [];
+    }
+    renderFiles();
+  }
+
+  async function saveRegistry() {
+    await fetch(JSONBIN_URL, {
+      method: "PUT",
+      headers: JSONBIN_HEADERS,
+      body: JSON.stringify({ files: fileRegistry })
+    });
+  }
+
+  // ---- File emoji by type ----
+  function fileEmoji(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    const map = {
+      pdf: "📄", zip: "🗜️", rar: "🗜️", "7z": "🗜️",
+      jpg: "🖼️", jpeg: "🖼️", png: "🖼️", gif: "🖼️", webp: "🖼️", svg: "🖼️",
+      mp4: "🎬", mov: "🎬", avi: "🎬", mkv: "🎬", webm: "🎬",
+      mp3: "🎵", wav: "🎵", flac: "🎵", ogg: "🎵",
+      doc: "📝", docx: "📝", xls: "📊", xlsx: "📊", ppt: "📊", pptx: "📊",
+      txt: "📃", md: "📃", csv: "📊",
+      js: "💻", ts: "💻", py: "🐍", html: "🌐", css: "🎨", json: "🔧",
+      exe: "⚙️", dmg: "💿", apk: "📱",
+    };
+    return map[ext] || "📁";
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes/1024).toFixed(1) + " KB";
+    if (bytes < 1073741824) return (bytes/1048576).toFixed(1) + " MB";
+    return (bytes/1073741824).toFixed(1) + " GB";
+  }
+
+  function formatDate(ts) {
+    return new Date(ts).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  }
+
+  // ---- Render files ----
+  function renderFiles() {
+    const grid = document.getElementById("filesGrid");
+    const count = document.getElementById("fileCount");
+    count.textContent = fileRegistry.length + (fileRegistry.length === 1 ? " file" : " files");
+
+    if (fileRegistry.length === 0) {
+      grid.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">🌌</div>
+        <p>No files yet. Be the first to upload!</p>
+      </div>`;
+      return;
+    }
+
+    // Sort newest first
+    const sorted = [...fileRegistry].sort((a, b) => b.ts - a.ts);
+
+    grid.innerHTML = sorted.map(f => `
+      <div class="file-card" id="fc-${f.id}">
+        <div class="file-emoji">${fileEmoji(f.name)}</div>
+        <div class="file-info">
+          <div class="file-name">${escHtml(f.name)}</div>
+          <div class="file-meta">${formatSize(f.size)} · ${formatDate(f.ts)}</div>
+        </div>
+        <div class="file-actions">
+          <a class="btn-download" href="${f.url}" target="_blank" download="${escHtml(f.name)}">↓ Download</a>
+          ${isAdmin ? `<button class="btn btn-danger" onclick="deleteFile('${f.id}', '${f.publicId}')">✕ Delete</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ---- Upload ----
+  async function uploadFile(file) {
+    const pw = document.getElementById("progressWrap");
+    const pf = document.getElementById("progressFill");
+    const pl = document.getElementById("progressLabel");
+    const sm = document.getElementById("statusMsg");
+
+    pw.style.display = "block";
+    pl.textContent = `Uploading ${file.name}...`;
+    pf.style.width = "0%";
+    sm.textContent = "";
+    sm.className = "status-msg";
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CONFIG.CLOUDINARY_UPLOAD_PRESET);
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/auto/upload`);
+
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+          const pct = Math.round(e.loaded / e.total * 100);
+          pf.style.width = pct + "%";
+          pl.textContent = `Uploading ${file.name}... ${pct}%`;
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          const entry = {
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+            name: file.name,
+            size: file.size,
+            url: data.secure_url,
+            publicId: data.public_id,
+            ts: Date.now()
+          };
+          fileRegistry.push(entry);
+          await saveRegistry();
+          renderFiles();
+          sm.textContent = `✓ ${file.name} uploaded successfully!`;
+          sm.className = "status-msg success";
+          pw.style.display = "none";
+          resolve();
+        } else {
+          reject(new Error("Upload failed"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error"));
+      xhr.send(formData);
+    });
+  }
+
+  async function handleFiles(files) {
+    if (!isConfigured()) {
+      document.getElementById("statusMsg").textContent = "⚠ Site not configured yet. See setup instructions.";
+      document.getElementById("statusMsg").className = "status-msg error";
+      return;
+    }
+    for (const file of files) {
+      try {
+        await uploadFile(file);
+      } catch(e) {
+        document.getElementById("statusMsg").textContent = `✗ Failed to upload ${file.name}`;
+        document.getElementById("statusMsg").className = "status-msg error";
+        document.getElementById("progressWrap").style.display = "none";
+      }
+    }
+  }
+
+  // ---- Delete ----
+  async function deleteFile(id, publicId) {
+    if (!confirm("Delete this file permanently?")) return;
+    // Remove from registry
+    fileRegistry = fileRegistry.filter(f => f.id !== id);
+    await saveRegistry();
+    renderFiles();
+    // Note: Cloudinary deletion requires backend (server-side signature).
+    // The file is removed from the listing. For full deletion from Cloudinary,
+    // you'd need a backend function (e.g. Netlify/Vercel serverless function).
+  }
+
+  // ---- Drag & Drop ----
+  const dz = document.getElementById("dropZone");
+  dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+  dz.addEventListener("drop", e => {
+    e.preventDefault();
+    dz.classList.remove("dragover");
+    handleFiles([...e.dataTransfer.files]);
+  });
+
+  document.getElementById("fileInput").addEventListener("change", e => {
+    handleFiles([...e.target.files]);
+    e.target.value = "";
+  });
+
+  // ---- Admin ----
+  function toggleAdminModal() {
+    if (isAdmin) { adminLogout(); return; }
+    document.getElementById("adminModal").classList.add("open");
+    document.getElementById("adminPasswordInput").focus();
+  }
+
+  function closeAdminModal() {
+    document.getElementById("adminModal").classList.remove("open");
+    document.getElementById("adminPasswordInput").value = "";
+    document.getElementById("adminStatus").textContent = "";
+  }
+
+  function checkAdmin() {
+    const val = document.getElementById("adminPasswordInput").value;
+    if (val === CONFIG.ADMIN_PASSWORD) {
+      isAdmin = true;
+      closeAdminModal();
+      document.getElementById("adminPanel").classList.add("visible");
+      document.getElementById("adminToggleBtn").textContent = "🔓";
+      renderFiles();
+    } else {
+      document.getElementById("adminStatus").textContent = "✗ Incorrect password";
+      document.getElementById("adminStatus").className = "status-msg error";
+    }
+  }
+
+  function adminLogout() {
+    isAdmin = false;
+    document.getElementById("adminPanel").classList.remove("visible");
+    document.getElementById("adminToggleBtn").textContent = "🔑";
+    renderFiles();
+  }
+
+  // ---- Init ----
+  if (!isConfigured()) {
+    document.getElementById("configNotice").classList.add("show");
+    document.getElementById("filesGrid").innerHTML = `<div class="empty-state"><div class="empty-icon">⚙️</div><p>Configure the site to get started.</p></div>`;
+    document.getElementById("fileCount").textContent = "0 files";
+  } else {
+    loadRegistry();
+  }
+</script>
+
+</body>
+</html>
